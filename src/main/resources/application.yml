@@ -7,33 +7,40 @@ spring:
       max-file-size: 100MB
       max-request-size: 102MB
 
+  # ── Spring Cloud Azure (Cosmos DB + credentials) ───────────────
+  cloud:
+    azure:
+      cosmos:
+        endpoint:  ${AZURE_COSMOS_ENDPOINT:https://docvaultdev.documents.azure.com:443/}
+        key:       ${AZURE_COSMOS_KEY:}
+        database:  ${AZURE_COSMOS_DATABASE:DocVaultDB}
+        populate-query-metrics: false
+      credential:
+        client-id:     ${AZURE_CLIENT_ID:}
+        tenant-id:     ${AZURE_TENANT_ID:}
+        client-secret: ${AZURE_CLIENT_SECRET:}
+
 server:
   port: 8080
 
-# ── Azure Storage ─────────────────────────────────────────────
+# ── Azure Blob Storage (custom AzureStorageProperties) ────────
 azure:
   storage:
     account-name:   ${AZURE_STORAGE_ACCOUNT_NAME:docvaultdev}
     account-key:    ${AZURE_STORAGE_ACCOUNT_KEY:}      # blank = Managed Identity
-    endpoint:       https://${azure.storage.account-name}.blob.core.windows.net
+    endpoint:       ${AZURE_STORAGE_ENDPOINT:https://${azure.storage.account-name}.blob.core.windows.net}
     container:
-      hot:  documents-hot
-      cold: documents-cold
+      hot:  ${AZURE_STORAGE_CONTAINER_HOT:documents-hot}
+      cold: ${AZURE_STORAGE_CONTAINER_COLD:documents-cold}
     sas:
-      expiry-minutes: 15
+      expiry-minutes: ${AZURE_STORAGE_SAS_EXPIRY_MINUTES:15}
     rehydration:
-      default-priority: Standard   # Standard | High
+      default-priority: ${AZURE_STORAGE_REHYDRATION_PRIORITY:Standard}
 
+  # Custom properties read by @Value in DocumentRepositoryCustomImpl
   cosmos:
-    endpoint:   ${AZURE_COSMOS_ENDPOINT:https://docvaultdev.documents.azure.com:443/}
-    key:        ${AZURE_COSMOS_KEY:}
-    database:   DocVaultDB
-    container:  documents
-
-  identity:
-    client-id:     ${AZURE_CLIENT_ID:}
-    tenant-id:     ${AZURE_TENANT_ID:}
-    client-secret: ${AZURE_CLIENT_SECRET:}
+    database:  ${AZURE_COSMOS_DATABASE:DocVaultDB}
+    container: ${AZURE_COSMOS_CONTAINER:documents}
 
 # ── Actuator ──────────────────────────────────────────────────
 management:
@@ -59,6 +66,15 @@ logging:
     com.azure:    WARN
 
 ---
-spring.config.activate.on-profile: prod
-azure.identity.use-managed-identity: true
-logging.level.com.docvault: INFO
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    azure:
+      credential:
+        managed-identity-enabled: true
+
+logging:
+  level:
+    com.docvault: INFO

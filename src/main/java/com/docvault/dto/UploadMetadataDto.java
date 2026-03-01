@@ -1,8 +1,5 @@
 package com.docvault.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import java.time.OffsetDateTime;
 import java.util.List;
 
 // ── Upload metadata from multipart request ────────────────────────────────
