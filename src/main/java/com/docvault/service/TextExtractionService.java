@@ -2,6 +2,7 @@ package com.docvault.service;
 
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class TextExtractionService {
      */
     public String extract(MultipartFile file) {
         try {
-            String text = tika.parseToString(file.getInputStream(), MAX_LEN);
+            String text = tika.parseToString(file.getInputStream(), new Metadata(), MAX_LEN);
             log.debug("[Tika] Extracted {} chars from {}", text.length(), file.getOriginalFilename());
             return text;
         } catch (IOException | TikaException e) {

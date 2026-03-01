@@ -1,8 +1,8 @@
 package com.docvault.service;
 
-import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.*;
 import com.azure.storage.blob.models.*;
+import com.azure.storage.blob.options.*;
 import com.azure.storage.blob.sas.*;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.common.StorageSharedKeyCredential;
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Core Azure Blob Storage service.
@@ -258,7 +257,7 @@ public class BlobStorageService {
         for (String name : new String[]{ props.getContainer().getHot(), props.getContainer().getCold() }) {
             BlobContainerClient cc = blobServiceClient.getBlobContainerClient(name);
             if (!cc.exists()) {
-                cc.createWithResponse(null, PublicAccessType.NONE, null, null);
+                cc.createWithResponse(null, null, null, null);
                 log.info("[Blob] Created container: {}", name);
             }
         }
