@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: document-service
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 102MB
+
+server:
+  port: 8080
+
+# ── Azure Storage ─────────────────────────────────────────────
+azure:
+  storage:
+    account-name:   ${AZURE_STORAGE_ACCOUNT_NAME:docvaultdev}
+    account-key:    ${AZURE_STORAGE_ACCOUNT_KEY:}      # blank = Managed Identity
+    endpoint:       https://${azure.storage.account-name}.blob.core.windows.net
+    container:
+      hot:  documents-hot
+      cold: documents-cold
+    sas:
+      expiry-minutes: 15
+    rehydration:
+      default-priority: Standard   # Standard | High
+
+  cosmos:
+    endpoint:   ${AZURE_COSMOS_ENDPOINT:https://docvaultdev.documents.azure.com:443/}
+    key:        ${AZURE_COSMOS_KEY:}
+    database:   DocVaultDB
+    container:  documents
+
+  identity:
+    client-id:     ${AZURE_CLIENT_ID:}
+    tenant-id:     ${AZURE_TENANT_ID:}
+    client-secret: ${AZURE_CLIENT_SECRET:}
+
+# ── Actuator ──────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# ── OpenAPI ───────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# ── Logging ───────────────────────────────────────────────────
+logging:
+  level:
+    com.docvault: DEBUG
+    com.azure:    WARN
+
+---
+spring.config.activate.on-profile: prod
+azure.identity.use-managed-identity: true
+logging.level.com.docvault: INFO
