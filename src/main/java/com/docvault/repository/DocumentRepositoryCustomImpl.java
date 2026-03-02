@@ -77,21 +77,23 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
 
     @Override
     public StatsDto getStats() {
-        String sql = "SELECT c.storageTier, COUNT(1) as cnt, SUM(c.fileSizeBytes) as bytes " +
-                     "FROM c GROUP BY c.storageTier";
+        CosmosQueryRequestOptions opts = new CosmosQueryRequestOptions();
 
-        List<Map> rows = container()
-                .queryItems(new SqlQuerySpec(sql), new CosmosQueryRequestOptions(), Map.class)
+        // 1. Tier aggregation (total count + bytes per tier)
+        String tierSql = "SELECT c.storageTier, COUNT(1) as cnt, SUM(c.fileSizeBytes) as bytes " +
+                         "FROM c GROUP BY c.storageTier";
+        List<Map> tierRows = container()
+                .queryItems(new SqlQuerySpec(tierSql), opts, Map.class)
                 .collectList()
                 .block();
 
         StatsDto stats = new StatsDto();
         long total = 0, totalBytes = 0;
-        if (rows != null) {
-            for (Map row : rows) {
+        if (tierRows != null) {
+            for (Map row : tierRows) {
                 String t = (String) row.get("storageTier");
                 long   c = ((Number) row.get("cnt")).longValue();
-                long   b = row.get("bytes") != null ? ((Number)row.get("bytes")).longValue() : 0;
+                long   b = row.get("bytes") != null ? ((Number) row.get("bytes")).longValue() : 0;
                 total += c; totalBytes += b;
                 switch (t != null ? t : "") {
                     case "Hot"     -> stats.setHot(c);
@@ -103,6 +105,25 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
         }
         stats.setTotal(total);
         stats.setTotalMb(totalBytes / (1024 * 1024));
+
+        // 2. Department aggregation
+        String deptSql = "SELECT c.department, COUNT(1) as cnt FROM c GROUP BY c.department";
+        List<Map> deptRows = container()
+                .queryItems(new SqlQuerySpec(deptSql), opts, Map.class)
+                .collectList()
+                .block();
+
+        List<Map<String, Object>> byDept = new ArrayList<>();
+        if (deptRows != null) {
+            for (Map row : deptRows) {
+                Map<String, Object> entry = new LinkedHashMap<>();
+                entry.put("department", row.get("department"));
+                entry.put("count", ((Number) row.get("cnt")).longValue());
+                byDept.add(entry);
+            }
+        }
+        stats.setByDepartment(byDept);
+
         return stats;
     }
 
