@@ -50,24 +50,33 @@ public class DocumentService {
     public DocumentDto upload(MultipartFile file, UploadMetadataDto meta) throws IOException {
         String docId = UUID.randomUUID().toString();
 
+        // Cache bytes FIRST — BlobStorageService.uploadDocument() consumes getInputStream()
+        // so file.getBytes() would return empty if called after blob upload
+        byte[] fileBytes;
+        try { fileBytes = file.getBytes(); } catch (Exception e) { fileBytes = new byte[0]; }
+        final byte[] bytes = fileBytes;
+        final String filename    = file.getOriginalFilename();
+        final String contentType = file.getContentType();
+        final long   fileSize    = file.getSize();
+
         // 1. Upload binary to Azure Blob Storage (Hot tier)
         BlobUploadResult blob = blobService.uploadDocument(
                 file, docId,
-                meta.getTitle() != null ? meta.getTitle() : file.getOriginalFilename(),
+                meta.getTitle() != null ? meta.getTitle() : filename,
                 meta.getAuthor(),
                 meta.getDepartment() != null ? meta.getDepartment() : "General");
 
         // 2. Build and persist metadata record (Cosmos DB)
         Document doc = new Document();
         doc.setId(docId);
-        doc.setTitle(meta.getTitle() != null ? meta.getTitle() : file.getOriginalFilename());
+        doc.setTitle(meta.getTitle() != null ? meta.getTitle() : filename);
         doc.setAuthor(meta.getAuthor() != null ? meta.getAuthor() : "Unknown");
         doc.setDepartment(meta.getDepartment() != null ? meta.getDepartment() : "General");
         doc.setTags(meta.getTags() != null ? meta.getTags() : List.of());
         doc.setDescription(meta.getDescription());
-        doc.setFilename(file.getOriginalFilename());
-        doc.setMimeType(file.getContentType());
-        doc.setFileSizeBytes(file.getSize());
+        doc.setFilename(filename);
+        doc.setMimeType(contentType);
+        doc.setFileSizeBytes(fileSize);
         doc.setBlobName(blob.getBlobName());
         doc.setBlobUrl(blob.getBlobUrl());
         doc.setContainerName(blob.getContainerName());
@@ -80,16 +89,12 @@ public class DocumentService {
         log.info("[DocumentService] Uploaded: docId={} tier=Hot", docId);
 
         // 3. Extract text and index in AI Search — fire-and-forget (non-blocking)
-        // Read file bytes now (MultipartFile stream may not be re-readable after request ends)
-        byte[] fileBytes;
-        try { fileBytes = file.getBytes(); } catch (Exception e) { fileBytes = new byte[0]; }
-        final byte[] bytes = fileBytes;
         final DocumentDto dto = toDto(saved);
 
         CompletableFuture.runAsync(() -> {
             String extractedText = "";
             try {
-                extractedText = textExtractionService.extractFromBytes(bytes, file.getOriginalFilename(), file.getContentType());
+                extractedText = textExtractionService.extractFromBytes(bytes, filename, contentType);
             } catch (Exception e) {
                 log.warn("[DocumentService] Text extraction failed for {}: {}", docId, e.getMessage());
             }

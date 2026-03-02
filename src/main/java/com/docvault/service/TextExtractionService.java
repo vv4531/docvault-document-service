@@ -44,7 +44,7 @@ public class TextExtractionService {
     public String extractFromBytes(byte[] bytes, String filename, String contentType) {
         try {
             Metadata meta = new Metadata();
-            if (contentType != null) meta.set(Metadata.CONTENT_TYPE, contentType);
+            if (contentType != null) meta.add("Content-Type", contentType);
             String text = tika.parseToString(new ByteArrayInputStream(bytes), meta, MAX_LEN);
             log.debug("[Tika] Extracted {} chars from {}", text.length(), filename);
             return text;
