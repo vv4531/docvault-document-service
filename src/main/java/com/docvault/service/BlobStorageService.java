@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -217,6 +218,24 @@ public class BlobStorageService {
         BlobClient     client = requireBlob(containerName, blobName);
         BlobProperties props  = client.getProperties();
         return props.getAccessTier() != null ? props.getAccessTier().toString() : "Hot";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOWNLOAD
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public byte[] downloadBlob(String containerName, String blobName) {
+        BlobClient blobClient = blobServiceClient
+                .getBlobContainerClient(containerName)
+                .getBlobClient(blobName);
+        if (!blobClient.exists()) return new byte[0];
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            blobClient.downloadStream(os);
+            return os.toByteArray();
+        } catch (Exception e) {
+            log.warn("[Blob] Download failed for {}/{}: {}", containerName, blobName, e.getMessage());
+            return new byte[0];
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

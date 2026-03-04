@@ -224,7 +224,18 @@ public class DocumentService {
         }
         int count = 0;
         for (Document doc : repository.findAll()) {
-            indexInSearch(toDto(doc), "");
+            String extractedText = "";
+            try {
+                byte[] bytes = blobService.downloadBlob(doc.getContainerName(), doc.getBlobName());
+                if (bytes.length > 0) {
+                    extractedText = textExtractionService.extractFromBytes(
+                            bytes, doc.getFilename(), doc.getMimeType());
+                }
+            } catch (Exception e) {
+                log.warn("[DocumentService] Text extraction failed during reindex for {}: {}",
+                        doc.getId(), e.getMessage());
+            }
+            indexInSearch(toDto(doc), extractedText);
             count++;
         }
         log.info("[DocumentService] Reindexed {} documents in AI Search", count);
