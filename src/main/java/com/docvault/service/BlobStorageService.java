@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -103,7 +104,7 @@ public class BlobStorageService {
         metadata.put("uploadedAt", OffsetDateTime.now().toString());
 
         blockBlobClient.uploadWithResponse(
-                new BlockBlobSimpleUploadOptions(file.getInputStream(), file.getSize())
+                new BlockBlobSimpleUploadOptions(new ByteArrayInputStream(file.getBytes()), file.getSize())
                         .setHeaders(headers)
                         .setMetadata(metadata)
                         .setTier(AccessTier.HOT),
