@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -119,7 +122,10 @@ public class DocumentService {
             indexDoc.put("fileSizeBytes", doc.getFileSizeBytes());
             indexDoc.put("uploadedAt",    doc.getUploadedAt() != null ? doc.getUploadedAt().toString() : null);
             indexDoc.put("extractedText", extractedText);
-            restTemplate.postForEntity(searchServiceUrl + "/v1/search/index", indexDoc, Void.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            restTemplate.postForEntity(searchServiceUrl + "/v1/search/index",
+                    new HttpEntity<>(indexDoc, headers), Void.class);
             log.info("[DocumentService] Indexed docId={} in AI Search", doc.getId());
         } catch (Exception e) {
             log.warn("[DocumentService] Search indexing failed for {}: {}", doc.getId(), e.getMessage());
