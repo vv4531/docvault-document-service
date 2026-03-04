@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * REST controller for document management operations.
@@ -117,5 +118,14 @@ public class DocumentController {
     public ResponseEntity<Void> deleteDocument(@PathVariable String id) {
         documentService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── POST /v1/documents/reindex — bulk re-index all docs in AI Search ──
+    @PostMapping("/reindex")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Re-index all existing documents in Azure AI Search")
+    public ResponseEntity<Map<String, Object>> reindexAll() {
+        int count = documentService.reindexAll();
+        return ResponseEntity.accepted().body(Map.of("indexed", count));
     }
 }

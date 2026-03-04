@@ -210,6 +210,21 @@ public class DocumentService {
         log.info("[DocumentService] Deleted: docId={}", id);
     }
 
+    // ── Bulk re-index ─────────────────────────────────────────────────────
+    public int reindexAll() {
+        if (searchServiceUrl == null || searchServiceUrl.isBlank()) {
+            log.warn("[DocumentService] Reindex skipped — SEARCH_SERVICE_URL not configured");
+            return 0;
+        }
+        int count = 0;
+        for (Document doc : repository.findAll()) {
+            indexInSearch(toDto(doc), "");
+            count++;
+        }
+        log.info("[DocumentService] Reindexed {} documents in AI Search", count);
+        return count;
+    }
+
     // ── Stats ─────────────────────────────────────────────────────────────
     public StatsDto getStats() {
         return repository.getStats();
