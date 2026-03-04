@@ -58,7 +58,6 @@ public class BlobStorageService {
             log.info("[Blob] Authenticating with DefaultAzureCredential (Managed Identity)");
             builder.credential(new DefaultAzureCredentialBuilder()
                     .excludeInteractiveBrowserCredential()
-                    .excludeSharedTokenCacheCredential()
                     .build());
         }
 
