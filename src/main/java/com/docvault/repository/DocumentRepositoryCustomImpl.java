@@ -5,6 +5,7 @@ import com.azure.cosmos.CosmosAsyncContainer;
 import com.azure.cosmos.models.*;
 import com.docvault.dto.StatsDto;
 import com.docvault.model.Document;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -22,7 +23,7 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
     private final String            containerName;
 
     public DocumentRepositoryCustomImpl(
-            CosmosAsyncClient cosmosClient,
+            @Qualifier("cosmosAsyncClient") CosmosAsyncClient cosmosClient,
             @Value("${azure.cosmos.database:DocVaultDB}") String database,
             @Value("${azure.cosmos.container:documents}") String containerName) {
         this.cosmosClient  = cosmosClient;
