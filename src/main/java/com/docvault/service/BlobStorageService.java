@@ -256,10 +256,16 @@ public class BlobStorageService {
 
     private void ensureContainersExist() {
         for (String name : new String[]{ props.getContainer().getHot(), props.getContainer().getCold() }) {
-            BlobContainerClient cc = blobServiceClient.getBlobContainerClient(name);
-            if (!cc.exists()) {
-                cc.createWithResponse(null, null, null, null);
-                log.info("[Blob] Created container: {}", name);
+            try {
+                BlobContainerClient cc = blobServiceClient.getBlobContainerClient(name);
+                boolean created = cc.createIfNotExists();
+                if (created) {
+                    log.info("[Blob] Created container: {}", name);
+                } else {
+                    log.info("[Blob] Container already exists: {}", name);
+                }
+            } catch (Exception e) {
+                log.warn("[Blob] Could not verify/create container '{}': {} — continuing startup", name, e.getMessage());
             }
         }
     }
