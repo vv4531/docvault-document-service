@@ -83,7 +83,8 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
         // 1. Tier aggregation (total count + bytes per tier)
         String tierSql = "SELECT c.storageTier, COUNT(1) as cnt, SUM(c.fileSizeBytes) as bytes " +
                          "FROM c GROUP BY c.storageTier";
-        List<Map> tierRows = container()
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> tierRows = (List<Map<String, Object>>) (List<?>) container()
                 .queryItems(new SqlQuerySpec(tierSql), opts, Map.class)
                 .collectList()
                 .block();
@@ -91,7 +92,7 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
         StatsDto stats = new StatsDto();
         long total = 0, totalBytes = 0;
         if (tierRows != null) {
-            for (Map row : tierRows) {
+            for (Map<String, Object> row : tierRows) {
                 String t = (String) row.get("storageTier");
                 long   c = ((Number) row.get("cnt")).longValue();
                 long   b = row.get("bytes") != null ? ((Number) row.get("bytes")).longValue() : 0;
@@ -109,14 +110,15 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
 
         // 2. Department aggregation
         String deptSql = "SELECT c.department, COUNT(1) as cnt FROM c GROUP BY c.department";
-        List<Map> deptRows = container()
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> deptRows = (List<Map<String, Object>>) (List<?>) container()
                 .queryItems(new SqlQuerySpec(deptSql), opts, Map.class)
                 .collectList()
                 .block();
 
         List<Map<String, Object>> byDept = new ArrayList<>();
         if (deptRows != null) {
-            for (Map row : deptRows) {
+            for (Map<String, Object> row : deptRows) {
                 Map<String, Object> entry = new LinkedHashMap<>();
                 entry.put("department", row.get("department"));
                 entry.put("count", ((Number) row.get("cnt")).longValue());
