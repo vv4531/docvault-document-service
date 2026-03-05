@@ -2,6 +2,7 @@ package com.docvault.controller;
 
 import com.docvault.dto.*;
 import com.docvault.service.DocumentService;
+import com.docvault.service.TierMigrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,10 +36,12 @@ public class DocumentController {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentController.class);
 
-    private final DocumentService documentService;
+    private final DocumentService      documentService;
+    private final TierMigrationService tierMigrationService;
 
-    public DocumentController(DocumentService documentService) {
-        this.documentService = documentService;
+    public DocumentController(DocumentService documentService, TierMigrationService tierMigrationService) {
+        this.documentService      = documentService;
+        this.tierMigrationService = tierMigrationService;
     }
 
     // ── GET /v1/documents — paginated list ────────────────────────────────
@@ -136,5 +139,15 @@ public class DocumentController {
     public ResponseEntity<Map<String, Object>> reindexAll() {
         int count = documentService.reindexAll();
         return ResponseEntity.accepted().body(Map.of("indexed", count));
+    }
+
+    // ── POST /v1/documents/migrate — manually trigger Hot→Cool migration ──
+    @PostMapping("/migrate")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Manually trigger Hot-to-Cool tier migration (admin/debug)")
+    public ResponseEntity<Map<String, Object>> triggerMigration() {
+        log.info("[Controller] Manual migration trigger requested");
+        tierMigrationService.migrateHotToCool();
+        return ResponseEntity.accepted().body(Map.of("status", "migration triggered"));
     }
 }

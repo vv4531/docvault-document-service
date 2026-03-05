@@ -164,9 +164,9 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
 
     @Override
     public List<Document> findHotDocsOlderThan(OffsetDateTime cutoff) {
-        // Include docs where storageTier is 'Hot' OR null/undefined (treat missing as Hot)
+        // uploadedAt is stored as epoch seconds (double) in Cosmos — compare numerically
         String sql = "SELECT * FROM c WHERE (c.storageTier = 'Hot' OR IS_NULL(c.storageTier) OR NOT IS_DEFINED(c.storageTier)) AND c.uploadedAt < @cutoff";
-        SqlParameter param = new SqlParameter("@cutoff", cutoff.toString());
+        SqlParameter param = new SqlParameter("@cutoff", cutoff.toInstant().getEpochSecond());
         List<Document> items = container()
                 .queryItems(new SqlQuerySpec(sql, List.of(param)),
                         new CosmosQueryRequestOptions(), Document.class)
