@@ -131,6 +131,38 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
     }
 
     @Override
+    public Page<Document> searchMetadata(String q, Pageable pageable) {
+        String lq = q != null ? q.toLowerCase() : "";
+
+        String where = " WHERE CONTAINS(LOWER(c.title), @q)" +
+                       " OR CONTAINS(LOWER(c.author), @q)" +
+                       " OR CONTAINS(LOWER(c.department), @q)" +
+                       " OR CONTAINS(LOWER(c.description), @q)" +
+                       " OR EXISTS(SELECT VALUE t FROM t IN c.tags WHERE CONTAINS(LOWER(t), @q))";
+
+        String dataSql = "SELECT * FROM c" + where +
+                         " ORDER BY c.uploadedAt DESC OFFSET " +
+                         pageable.getOffset() + " LIMIT " + pageable.getPageSize();
+
+        String countSql = "SELECT VALUE COUNT(1) FROM c" + where;
+
+        SqlParameter param = new SqlParameter("@q", lq);
+        CosmosQueryRequestOptions opts = new CosmosQueryRequestOptions();
+
+        List<Document> items = container()
+                .queryItems(new SqlQuerySpec(dataSql, List.of(param)), opts, Document.class)
+                .collectList()
+                .block();
+
+        Long total = container()
+                .queryItems(new SqlQuerySpec(countSql, List.of(param)), opts, Long.class)
+                .blockFirst();
+
+        return new PageImpl<>(items != null ? items : List.of(), pageable,
+                              total != null ? total : 0);
+    }
+
+    @Override
     public void updateLastAccessed(String id, OffsetDateTime at) {
         String sql = "SELECT * FROM c WHERE c.id = @id";
         Document doc = container()

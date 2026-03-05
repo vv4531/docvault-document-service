@@ -58,6 +58,15 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.getStats());
     }
 
+    // ── GET /v1/documents/search — metadata search against Cosmos DB ──────
+    @GetMapping("/search")
+    @Operation(summary = "Search document metadata fields in Cosmos DB")
+    public ResponseEntity<Page<DocumentDto>> searchMetadata(
+            @RequestParam(required = false, defaultValue = "") String q,
+            @PageableDefault(size = 25) Pageable pageable) {
+        return ResponseEntity.ok(documentService.searchMetadata(q, pageable));
+    }
+
     // ── GET /v1/documents/:id ─────────────────────────────────────────────
     @GetMapping("/{id}")
     @Operation(summary = "Get document metadata by ID")

@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 
 public interface DocumentRepositoryCustom {
     Page<Document> findAllFiltered(String tier, String department, Pageable pageable);
+    Page<Document> searchMetadata(String q, Pageable pageable);
     StatsDto       getStats();
     void           updateLastAccessed(String id, OffsetDateTime at);
     void           patchRestoreStatus(String id, String status, OffsetDateTime at);

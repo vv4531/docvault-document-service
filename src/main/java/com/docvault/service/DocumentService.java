@@ -145,6 +145,11 @@ public class DocumentService {
         return repository.findAllFiltered(tier, department, pageable).map(this::toDto);
     }
 
+    // ── Standard metadata search (Cosmos DB) ──────────────────────────────
+    public Page<DocumentDto> searchMetadata(String q, Pageable pageable) {
+        return repository.searchMetadata(q, pageable).map(this::toDto);
+    }
+
     // ── Get by ID ─────────────────────────────────────────────────────────
     public DocumentDto getById(String id) {
         Document doc = repository.findById(id)
