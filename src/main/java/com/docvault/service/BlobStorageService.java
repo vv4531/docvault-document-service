@@ -221,6 +221,11 @@ public class BlobStorageService {
         return RehydrationResult.started(priority, estimatedReady);
     }
 
+    /** Returns true if the archive storage account is configured and initialised. */
+    public boolean isArchiveConfigured() {
+        return archiveBlobServiceClient != null;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // COPY TO ARCHIVE (cross-account move to Cool storage)
     // ─────────────────────────────────────────────────────────────────────────

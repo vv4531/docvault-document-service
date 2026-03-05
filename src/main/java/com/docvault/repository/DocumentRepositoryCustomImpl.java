@@ -24,8 +24,8 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
 
     public DocumentRepositoryCustomImpl(
             @Qualifier("cosmosAsyncClient") CosmosAsyncClient cosmosClient,
-            @Value("${azure.cosmos.database:DocVaultDB}") String database,
-            @Value("${azure.cosmos.container:documents}") String containerName) {
+            @Value("${tier-migration.cosmos.database:DocVaultDB}") String database,
+            @Value("${tier-migration.cosmos.container:documents}") String containerName) {
         this.cosmosClient  = cosmosClient;
         this.database      = database;
         this.containerName = containerName;

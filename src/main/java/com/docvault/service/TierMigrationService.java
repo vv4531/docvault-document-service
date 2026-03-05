@@ -56,7 +56,13 @@ public class TierMigrationService {
      */
     @Scheduled(fixedDelayString = "${tier-migration.schedule-interval-ms:300000}")
     public void migrateHotToCool() {
+        if (!blobService.isArchiveConfigured()) {
+            log.warn("[Migration] Archive storage not configured — set AZURE_ARCHIVE_ENDPOINT + AZURE_ARCHIVE_ACCOUNT_KEY. Skipping.");
+            return;
+        }
+
         OffsetDateTime cutoff = OffsetDateTime.now().minusHours(hotToCoolAfterHours);
+        log.info("[Migration] Checking for Hot docs older than {} hour(s) (cutoff={})", hotToCoolAfterHours, cutoff);
         List<Document> candidates = repository.findHotDocsOlderThan(cutoff);
 
         if (candidates.isEmpty()) {
