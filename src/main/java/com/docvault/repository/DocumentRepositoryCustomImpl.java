@@ -163,6 +163,18 @@ public class DocumentRepositoryCustomImpl implements DocumentRepositoryCustom {
     }
 
     @Override
+    public List<Document> findHotDocsOlderThan(OffsetDateTime cutoff) {
+        String sql = "SELECT * FROM c WHERE c.storageTier = 'Hot' AND c.uploadedAt < @cutoff";
+        SqlParameter param = new SqlParameter("@cutoff", cutoff.toString());
+        List<Document> items = container()
+                .queryItems(new SqlQuerySpec(sql, List.of(param)),
+                        new CosmosQueryRequestOptions(), Document.class)
+                .collectList()
+                .block();
+        return items != null ? items : List.of();
+    }
+
+    @Override
     public void updateLastAccessed(String id, OffsetDateTime at) {
         String sql = "SELECT * FROM c WHERE c.id = @id";
         Document doc = container()

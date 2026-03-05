@@ -42,6 +42,7 @@ public class BlobStorageService {
 
     private final AzureStorageProperties props;
     private BlobServiceClient blobServiceClient;
+    private BlobServiceClient archiveBlobServiceClient;
 
     public BlobStorageService(AzureStorageProperties props) {
         this.props = props;
@@ -64,6 +65,22 @@ public class BlobStorageService {
         blobServiceClient = builder.buildClient();
         ensureContainersExist();
         log.info("[Blob] BlobServiceClient ready → {}", props.getEndpoint());
+
+        // Archive storage account (docvaultarchive)
+        AzureStorageProperties.Archive arc = props.getArchive();
+        if (arc.getEndpoint() != null && !arc.getEndpoint().isBlank()) {
+            BlobServiceClientBuilder archiveBuilder = new BlobServiceClientBuilder()
+                    .endpoint(arc.getEndpoint());
+            String archiveKey = arc.getAccountKey();
+            if (archiveKey != null && !archiveKey.isBlank()) {
+                archiveBuilder.credential(new StorageSharedKeyCredential(arc.getAccountName(), archiveKey));
+            } else {
+                archiveBuilder.credential(new DefaultAzureCredentialBuilder().build());
+            }
+            archiveBlobServiceClient = archiveBuilder.buildClient();
+            ensureArchiveContainerExists();
+            log.info("[Blob] ArchiveBlobServiceClient ready → {}", arc.getEndpoint());
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -205,6 +222,55 @@ public class BlobStorageService {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // COPY TO ARCHIVE (cross-account move to Cool storage)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Copy a blob from the hot container (docvaultstor) to the archive account
+     * (docvaultarchive / documents-cool), then delete the source.
+     *
+     * @param srcContainer  source container name (documents-hot)
+     * @param blobName      blob path (same path used in archive)
+     * @param contentType   MIME type for the destination blob headers
+     * @return {@link BlobUploadResult} with updated URL and container
+     */
+    public BlobUploadResult copyToArchive(String srcContainer, String blobName, String contentType) {
+        String archiveContainer = props.getArchive().getContainer();
+
+        log.info("[Blob] Copying to archive: {}/{} → {}/{}", srcContainer, blobName, archiveContainer, blobName);
+
+        // 1. Download from hot storage
+        byte[] bytes = downloadBlob(srcContainer, blobName);
+        if (bytes.length == 0) {
+            throw new BlobNotFoundException("Source blob empty or not found: " + srcContainer + "/" + blobName);
+        }
+
+        // 2. Upload to archive storage account
+        BlobContainerClient archiveContainerClient = archiveBlobServiceClient.getBlobContainerClient(archiveContainer);
+        BlockBlobClient destClient = archiveContainerClient.getBlobClient(blobName).getBlockBlobClient();
+
+        BlobHttpHeaders headers = new BlobHttpHeaders().setContentType(contentType);
+        destClient.uploadWithResponse(
+                new BlockBlobSimpleUploadOptions(new ByteArrayInputStream(bytes), bytes.length)
+                        .setHeaders(headers),
+                null, null);
+
+        BlobProperties destProps = destClient.getProperties();
+
+        // 3. Delete from hot storage
+        deleteBlob(srcContainer, blobName);
+
+        log.info("[Blob] Archive copy complete: {}/{}", archiveContainer, blobName);
+        return BlobUploadResult.builder()
+                .blobName(blobName)
+                .blobUrl(destClient.getBlobUrl())
+                .containerName(archiveContainer)
+                .etag(destProps.getETag())
+                .storageTier("Cool")
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // SET TIER
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -273,6 +339,16 @@ public class BlobStorageService {
     private String sanitiseMetaValue(String value) {
         if (value == null) return "";
         return value.replaceAll("[\\r\\n]", " ").substring(0, Math.min(value.length(), 256));
+    }
+
+    private void ensureArchiveContainerExists() {
+        String name = props.getArchive().getContainer();
+        try {
+            boolean created = archiveBlobServiceClient.getBlobContainerClient(name).createIfNotExists();
+            log.info("[Blob] Archive container '{}' {}", name, created ? "created" : "already exists");
+        } catch (Exception e) {
+            log.warn("[Blob] Could not verify/create archive container '{}': {} — continuing startup", name, e.getMessage());
+        }
     }
 
     private void ensureContainersExist() {

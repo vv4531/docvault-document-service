@@ -14,6 +14,7 @@ public class AzureStorageProperties {
     private Container container = new Container();
     private Sas sas = new Sas();
     private Rehydration rehydration = new Rehydration();
+    private Archive archive = new Archive();
 
     public static class Container {
         private String hot  = "documents-hot";
@@ -34,6 +35,21 @@ public class AzureStorageProperties {
         public void   setDefaultPriority(String v) { this.defaultPriority = v; }
     }
 
+    public static class Archive {
+        private String accountName;
+        private String accountKey;
+        private String endpoint;
+        private String container = "documents-cool";
+        public String getAccountName()             { return accountName; }
+        public void   setAccountName(String v)     { this.accountName = v; }
+        public String getAccountKey()              { return accountKey; }
+        public void   setAccountKey(String v)      { this.accountKey = v; }
+        public String getEndpoint()                { return endpoint; }
+        public void   setEndpoint(String v)        { this.endpoint = v; }
+        public String getContainer()               { return container; }
+        public void   setContainer(String v)       { this.container = v; }
+    }
+
     public String    getAccountName()              { return accountName; }
     public void      setAccountName(String v)      { this.accountName = v; }
     public String    getAccountKey()               { return accountKey; }
@@ -46,4 +62,6 @@ public class AzureStorageProperties {
     public void      setSas(Sas v)                 { this.sas = v; }
     public Rehydration getRehydration()            { return rehydration; }
     public void        setRehydration(Rehydration v) { this.rehydration = v; }
+    public Archive     getArchive()                { return archive; }
+    public void        setArchive(Archive v)       { this.archive = v; }
 }

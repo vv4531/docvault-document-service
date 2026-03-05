@@ -42,6 +42,18 @@ azure:
     rehydration:
       default-priority: ${AZURE_STORAGE_REHYDRATION_PRIORITY:Standard}
 
+  archive:
+    account-name: ${AZURE_ARCHIVE_ACCOUNT_NAME:docvaultarchive}
+    account-key:  ${AZURE_ARCHIVE_ACCOUNT_KEY:}
+    endpoint:     ${AZURE_ARCHIVE_ENDPOINT:https://docvaultarchive.blob.core.windows.net}
+    container:    ${AZURE_ARCHIVE_CONTAINER:documents-cool}
+
+tier-migration:
+  # How old (in hours) a Hot-tier document must be before moving to Cool
+  hot-to-cool-after-hours: ${TIER_MIGRATION_HOT_TO_COOL_HOURS:1}
+  # How often (in milliseconds) the migration job runs
+  schedule-interval-ms: ${TIER_MIGRATION_INTERVAL_MS:300000}
+
   # Custom properties read by @Value in DocumentRepositoryCustomImpl
   cosmos:
     database:  ${AZURE_COSMOS_DATABASE:DocVaultDB}
