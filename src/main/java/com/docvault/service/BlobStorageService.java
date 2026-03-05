@@ -296,7 +296,9 @@ public class BlobStorageService {
     // ─────────────────────────────────────────────────────────────────────────
 
     public byte[] downloadBlob(String containerName, String blobName) {
-        BlobClient blobClient = blobServiceClient
+        BlobServiceClient serviceClient = isArchiveContainer(containerName)
+                ? archiveBlobServiceClient : blobServiceClient;
+        BlobClient blobClient = serviceClient
                 .getBlobContainerClient(containerName)
                 .getBlobClient(blobName);
         if (!blobClient.exists()) return new byte[0];
@@ -324,13 +326,22 @@ public class BlobStorageService {
     // ─────────────────────────────────────────────────────────────────────────
 
     private BlobClient requireBlob(String containerName, String blobName) {
-        BlobClient client = blobServiceClient
+        // Route to archive account if this is the archive container
+        BlobServiceClient serviceClient = isArchiveContainer(containerName)
+                ? archiveBlobServiceClient : blobServiceClient;
+        BlobClient client = serviceClient
                 .getBlobContainerClient(containerName)
                 .getBlobClient(blobName);
         if (!client.exists()) {
             throw new BlobNotFoundException("Blob not found: " + containerName + "/" + blobName);
         }
         return client;
+    }
+
+    private boolean isArchiveContainer(String containerName) {
+        return archiveBlobServiceClient != null
+                && containerName != null
+                && containerName.equals(props.getArchive().getContainer());
     }
 
     private String buildBlobName(String department, String docId, String filename) {
